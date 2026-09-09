@@ -35,13 +35,24 @@ A naive `stock -= 1` operation without database-level synchronization results in
 
 ---
 
-### 2. Performance & In-Memory Caching 
-**Objective:** Optimizing high-read architectures and mitigating database bottlenecks.
-**Concepts:** N+1 Query resolution, B-Tree Indexing optimizations, Redis In-Memory Caching, and Cache Stampede mitigation.
+### 2. Performance, Caching & Asynchronous Processing (`caching_performance/`)
+**Objective:** Architect a highly scalable, Read-Heavy & Write-Heavy system capable of handling thousands of concurrent requests with sub-10ms latency.
 
-### 3. Asynchronous Processing 
-**Objective:** Offloading heavy I/O bound tasks to background workers to ensure instant API responses.
-**Concepts:** Message Brokers (RabbitMQ), Distributed Task Queues (Celery), and Event-driven triggers.
+**The Scenario:** A URL Shortener tracking clicks in real-time. 
+*   **The Problem:** Updating the database synchronously on every click (`clicks += 1`) causes severe database locking, high latency (~248ms), and a massive error rate (~48% under heavy load) due to disk I/O bottlenecks and race conditions.
+
+**Implemented Solutions & Architectural Patterns:**
+
+*   **Read-Through Cache:** 
+    *   Cached the `original_url` in Redis. Reduced read latency from ~178ms to ~2ms and eliminated database read bottlenecks.
+*   **Write-Behind (Write-Back) Caching Strategy:**
+    *   Instead of writing to PostgreSQL on every click, clicks are tracked entirely in Redis memory using atomic operations, maintaining zero-latency writes.
+*   **Atomic Lua Scripts:**
+    *   Implemented custom Redis Lua scripts to handle incrementing, delta extraction, and fault-recovery operations atomically, preventing race conditions *inside* Redis itself.
+*   **Asynchronous Synchronization (Celery & RabbitMQ/Redis):**
+    *   **Smart Polling:** Utilized Redis Sets (`SADD`, `SMEMBERS`) to track only active URLs, avoiding full database scans.
+    *   **Delta Sync:** A Celery Beat dispatcher checks active URLs. When a URL hits a threshold (e.g., 50 clicks), a background Celery worker extracts the delta and updates PostgreSQL in the background.
+    *   **Fault Tolerance & Exponential Backoff:** If the PostgreSQL transaction fails (e.g., DB is down), a Lua script restores the un-synced clicks back to Redis, and the Celery worker retries using exponential backoff, ensuring zero data loss.
 
 ---
 

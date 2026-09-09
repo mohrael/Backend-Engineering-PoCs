@@ -1,5 +1,5 @@
 """
-URL configuration for concurrency_poc project.
+URL configuration for core project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -20,5 +20,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('products.urls'))
+    path('concurrency/', include('concurrency_locks.urls')),
+    path('caching/',include('caching_performance.urls'))
 ]

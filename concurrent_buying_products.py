@@ -2,7 +2,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from urllib.parse import urljoin
-url = "http://127.0.0.1:8000/buy/"
+url = "http://127.0.0.1:8000/concurrency/buy/"
 
 def buy_item(id):
     response = requests.post(url + str(id))
