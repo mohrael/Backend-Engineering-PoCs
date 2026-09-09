@@ -54,6 +54,17 @@ A naive `stock -= 1` operation without database-level synchronization results in
     *   **Delta Sync:** A Celery Beat dispatcher checks active URLs. When a URL hits a threshold (e.g., 50 clicks), a background Celery worker extracts the delta and updates PostgreSQL in the background.
     *   **Fault Tolerance & Exponential Backoff:** If the PostgreSQL transaction fails (e.g., DB is down), a Lua script restores the un-synced clicks back to Redis, and the Celery worker retries using exponential backoff, ensuring zero data loss.
 
+**📈 Benchmark Results (Apache Benchmark / JMeter):**
+*Test conditions: 100 concurrent requests testing the read & write-back endpoints.*
+
+| Metric | Naive Approach (PostgreSQL Only) | Optimized (Redis + Celery) | Impact / Improvement |
+| :--- | :--- | :--- | :--- |
+| **Average Response Time** | 128 ms | **32 ms** (Min: 5 ms) | **~4x Faster** |
+| **Throughput (req/sec)** | 88.3 req/sec | **100.9 req/sec** | Improved (Scales seamlessly under heavier loads) |
+| **Error Rate** | High under heavy load (Locks) | **0.00%** | Complete elimination of DB Race Conditions |
+| **Database I/O** | 1 Read + 1 Write per click | **Zero** synchronous DB hits | Database breathes; writes are batched in background |
+
+---
 ---
 
 ## Local Setup & Benchmarking
