@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import datetime,timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'concurrency_locks',
     'caching_performance',
+    'realtime_chat',
+    'channels',
+    "rest_framework"
 
 ]
 
@@ -69,7 +74,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+# WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
 
 
 # Database
@@ -91,6 +97,17 @@ DATABASES = {
 
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+# JWT_AUTH = {
+#     'JWT_EXPIRATION_DELTA':timedelta(days=2),
+#     'JWT_ALLOW_REFRESH':True,
+#     'JWT_REFRESH_EXPIRATION_DELTA':timedelta(days=7)
+# }
+
 CACHES = {
     "default":{
         "BACKEND": "django_redis.cache.RedisCache",
@@ -103,6 +120,15 @@ CELERY_BEAT_SCHEDULE = {
         "task": "caching_performance.tasks.dispatcher_task",
         "schedule": 10.0,
     },
+}
+
+CHANNEL_LAYERS = {
+    "default":{
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1",6379)]
+        }
+    }
 }
 
 CELERY_BROKER_URL = 'redis://localhost:6379/1'

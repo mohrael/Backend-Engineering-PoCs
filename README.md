@@ -65,6 +65,22 @@ A naive `stock -= 1` operation without database-level synchronization results in
 | **Database I/O** | 1 Read + 1 Write per click | **Zero** synchronous DB hits | Database breathes; writes are batched in background |
 
 ---
+### 3. Real-Time Systems & Distributed Presence (`realtime_chat/`)
+**Objective:** Architect a fault-tolerant, real-time WebSocket infrastructure handling persistent connections, multi-tab presence, ghost connection cleanup, and socket-level security.
+
+**The Scenario:** A chat room/live dashboard where users' online/offline statuses must be perfectly synchronized across all clients, even during catastrophic network failures, while protecting the server from spam and DoS attacks.
+
+**Implemented Solutions & Architectural Patterns:**
+*   **ASGI & Django Channels:** Transitioned the application from WSGI to ASGI (Daphne) to support asynchronous, persistent WebSocket tunnels.
+*   **Pub/Sub Message Broker:** Integrated Redis as a Channel Layer to broadcast messages instantaneously across disconnected WebSocket consumers in constant time (O(1)).
+*   **Fault-Tolerant Presence Tracking (Lua + Redis Sets):**
+    *   Tracked online status per-tab and per-user using unique Redis Keys and atomic Lua Scripts to prevent race conditions during concurrent connects/disconnects.
+*   **Ghost Connection Mitigation (Heartbeats & TTL):**
+    *   **Client-Server Pings:** Implemented an `asyncio` background task inside the consumer emitting constant heartbeats. 
+    *   **Redis Keyspace Notifications:** Engineered a standalone background worker (Django Management Command) subscribed to Redis expiration events (`__keyevent@1__:expired`). If a client silently drops (e.g., power loss) and misses their TTL window, the worker intercepts the event and broadcasts an accurate "offline" state to the network.
+*   **WebSocket Rate Limiting (Fixed Window Counter):**
+    *   Protected the asynchronous consumer from spam and Denial of Service (DoS) by implementing a strict rate limiter (e.g., max 5 messages per 10 seconds).
+    *   Utilized atomic Redis Lua scripts to increment message counts and set expirations in a single transaction, ensuring zero race conditions even if a malicious script sends hundreds of payloads in a single millisecond.
 ---
 
 ## Local Setup & Benchmarking

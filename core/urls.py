@@ -16,10 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
+from realtime_chat.views import MeView
 
 urlpatterns = [
+    path("api/token/",TokenObtainPairView.as_view(),name="token_obtain_pair"),
+    path("api/refresh/",TokenRefreshView.as_view(),name="token_refresh"),
+    path("api/me/",MeView.as_view()),
+
     path('admin/', admin.site.urls),
     path('concurrency/', include('concurrency_locks.urls')),
-    path('caching/',include('caching_performance.urls'))
+    path('caching/',include('caching_performance.urls')),
+    path('chat/',include('realtime_chat.urls')),
 ]

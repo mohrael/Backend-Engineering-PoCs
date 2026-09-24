@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views import View
 from .models import ShortURL
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.core.cache import cache

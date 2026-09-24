@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h2>Chat Room Test</h2>
+    <textarea id="chat-log" cols="70" rows="15" readonly></textarea><br><br>
+    
+    <input id="chat-message-input" type="text" size="50" placeholder="Type a message...">
+    <button id="chat-message-submit">Send</button>
+
+    <script>
+        // Replace with your actual WebSocket URL and group name
+        const roomName = "ran"; 
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzkwMzMzNDM1LCJpYXQiOjE3ODk3Mjg2MzUsImp0aSI6ImIxY2RiMDMwOTU4ZjQxODdiMmZlYzVmZjljMGYzMDFmIiwidXNlcl9pZCI6IjEifQ.dlFFWZTvIFy2jQ3zQJWa-_GCazCTuZ0n8ZvF7h2Nf7w"
+        const chatSocket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${roomName}/?token=${token}`);
+
+        chatSocket.onopen = function(e) {
+            document.getElementById('chat-log').value += "--- Connected to server ---\n";
+        };
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+
+            // 1. Handle automatic heartbeat
+            if (data.type === 'ping') {
+                console.log("Ping received from server. Sending pong...");
+                chatSocket.send(JSON.stringify({'type': 'pong'}));
+                return;
+            }
+
+            // 2. Handle normal messages
+            document.getElementById('chat-log').value += (e.data + '\n');
+        };
+
+        chatSocket.onclose = function(e) {
+            document.getElementById('chat-log').value += "--- Disconnected from server ---\n";
+        };
+
+        // Send message on button click
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+            
+            messageInputDom.value = '';
+        };
+    </script>
+</body>
+</html>
